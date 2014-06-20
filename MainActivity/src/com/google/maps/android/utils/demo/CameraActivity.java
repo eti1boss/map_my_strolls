@@ -90,7 +90,7 @@ public class CameraActivity extends Activity {
 		
 
 		Log.e("EBOS", "startActivityForResult");
-		//startActivityForResult(i, 0);
+		startActivityForResult(i, 0);
 	}
 
 	@Override
