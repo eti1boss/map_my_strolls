@@ -1,12 +1,26 @@
 package com.google.maps.android.utils.demo;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Bitmap.Config;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
+import android.os.Environment;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.Toast;
-
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
@@ -16,10 +30,6 @@ import com.google.maps.android.clustering.ClusterManager;
 import com.google.maps.android.clustering.view.DefaultClusterRenderer;
 import com.google.maps.android.ui.IconGenerator;
 import com.google.maps.android.utils.demo.model.Person;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 
 /**
  * Demonstrates heavy customisation of the look of rendered clusters.
@@ -38,10 +48,11 @@ public class CustomMarkerClusteringDemoActivity extends BaseDemoActivity impleme
         private final ImageView mImageView;
         private final ImageView mClusterImageView;
         private final int mDimension;
-
+        
         public PersonRenderer() {
+      	
             super(getApplicationContext(), getMap(), mClusterManager);
-
+            
             View multiProfile = getLayoutInflater().inflate(R.layout.multi_profile, null);
             mClusterIconGenerator.setContentView(multiProfile);
             mClusterImageView = (ImageView) multiProfile.findViewById(R.id.image);
@@ -51,14 +62,33 @@ public class CustomMarkerClusteringDemoActivity extends BaseDemoActivity impleme
             mImageView.setLayoutParams(new ViewGroup.LayoutParams(mDimension, mDimension));
             int padding = (int) getResources().getDimension(R.dimen.custom_profile_padding);
             mImageView.setPadding(padding, padding, padding, padding);
+            //mIconGenerator.setContentView(mImageView);
+            
+            String pathName = "/storage/emulated/0/map_my_strolls/pictures/test.jpg"; 
+            Drawable d = Drawable.createFromPath(pathName);
+            mIconGenerator.setBackground(d);
             mIconGenerator.setContentView(mImageView);
+//EBOS
         }
 
-        @Override
+		@Override
         protected void onBeforeClusterItemRendered(Person person, MarkerOptions markerOptions) {
             // Draw a single person.
             // Set the info window to show their name.
-            mImageView.setImageResource(person.profilePhoto);
+
+//        	String pathName = "/storage/emulated/0/map_my_strolls/pictures/test.jpg"; 
+        	String pathName = person.mImageURL; 
+        	
+        	BitmapFactory bmF = new BitmapFactory();
+        	Bitmap bmOLD = bmF.decodeFile(pathName);
+        	Bitmap bm = Bitmap.createScaledBitmap(bmOLD, 150, 150, false);
+        	
+        	Drawable drawable = new BitmapDrawable(bm);  
+
+        	
+            Drawable d = Drawable.createFromPath(pathName);
+            mIconGenerator.setBackground(drawable);
+            
             Bitmap icon = mIconGenerator.makeIcon();
             markerOptions.icon(BitmapDescriptorFactory.fromBitmap(icon)).title(person.name);
         }
@@ -74,9 +104,11 @@ public class CustomMarkerClusteringDemoActivity extends BaseDemoActivity impleme
             for (Person p : cluster.getItems()) {
                 // Draw 4 at most.
                 if (profilePhotos.size() == 4) break;
-                Drawable drawable = getResources().getDrawable(p.profilePhoto);
+//                Drawable drawable = getResources().getDrawable(p.profilePhoto);
+                Drawable drawable = Drawable.createFromPath(p.mImageURL);
                 drawable.setBounds(0, 0, width, height);
                 profilePhotos.add(drawable);
+
             }
             MultiDrawable multiDrawable = new MultiDrawable(profilePhotos);
             multiDrawable.setBounds(0, 0, width, height);
@@ -133,12 +165,50 @@ public class CustomMarkerClusteringDemoActivity extends BaseDemoActivity impleme
 
         addItems();
         mClusterManager.cluster();
+        Toast.makeText(getApplicationContext(), "qsfeqsdfqs", Toast.LENGTH_LONG);
     }
 
-    private void addItems() {
+    @SuppressLint("NewApi")
+	private void addItems() {
         // http://www.flickr.com/photos/sdasmarchives/5036248203/
     	//mClusterManager.addItem(new Person(position(), "Walter", R.drawable.walter));
-    	mClusterManager.addItem(new Person(customPosition(44.8155134613628,-0.55440958300831), "Jardin Brascassat", R.drawable.teacher));
+    	
+    	
+    	BufferedReader reader;
+    	
+    	File data = new File(
+				Environment
+						.getExternalStoragePublicDirectory("map_my_strolls"),
+				"data.txt");
+
+		try {
+			reader = new BufferedReader(new FileReader("/storage/emulated/0/map_my_strolls/data.txt"));
+	    	String line = null;
+	    	while ((line = reader.readLine()) != null) {
+	    		if(line != ""){
+		    		String[] parts = line.split(";");
+		    		if(parts.length != 0){
+		    			String[] pos = parts[1].split(":");
+		    			if(pos.length != 0){
+		    				File imgFile = new  File(parts[0]);
+		    				if(imgFile.exists()){
+		    					mClusterManager.addItem(new Person(customPosition(Double.parseDouble(pos[0]),Double.parseDouble(pos[1])), parts[0], R.drawable.teacher,imgFile.getPath()));
+			    		    }
+		    			}
+		    		}
+	    		}	
+	    	}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		//mClusterManager.addItem(new Person(customPosition(44.8310992826452,-0.56041431503595), "Terrasse des Quinconces", R.drawable.teacher,"ok"));
+    	
+    	/*mClusterManager.addItem(new Person(customPosition(44.8155134613628,-0.55440958300831), "Jardin Brascassat", R.drawable.teacher));
     	mClusterManager.addItem(new Person(customPosition(44.846346095224,-0.57027209701738), "Terrasse des Quinconces", R.drawable.teacher));
     	mClusterManager.addItem(new Person(customPosition(44.8427104724202,-0.58533428258489), "Square des Martyrs de la Résistance", R.drawable.teacher));
     	mClusterManager.addItem(new Person(customPosition(44.8463501049228,-0.5649715593407), "Parc des Berges de Queyries", R.drawable.teacher));
@@ -217,7 +287,7 @@ public class CustomMarkerClusteringDemoActivity extends BaseDemoActivity impleme
     	mClusterManager.addItem(new Person(customPosition(44.872849410881,-0.57124378012408), "Parc de la Cité des Aubiers", R.drawable.teacher));
     	mClusterManager.addItem(new Person(customPosition(44.8178483205415,-0.57389228082191), "Square Jean Mermoz", R.drawable.teacher));
     	mClusterManager.addItem(new Person(customPosition(44.8331451702635,-0.59364380670929), "Square Gaviniès", R.drawable.teacher));
-    	mClusterManager.addItem(new Person(customPosition(44.8310992826452,-0.56041431503595), "Square Dom Bedos", R.drawable.teacher));
+    	mClusterManager.addItem(new Person(customPosition(44.8310992826452,-0.56041431503595), "Square Dom Bedos", R.drawable.teacher));*/
     }
 
     private LatLng position() {

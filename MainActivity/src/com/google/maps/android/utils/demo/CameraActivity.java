@@ -1,12 +1,14 @@
 package com.google.maps.android.utils.demo;
 
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import android.R.integer;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -18,40 +20,35 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.widget.Toast;
 
-public class CameraActivity extends Activity {
+public class CameraActivity extends Activity{
 
 	Uri fileUri = null;
 
 	protected LocationListener locationListener;
 	protected LocationManager lm;
 	String currentPosition;
+	public String getCurrentPosition() {
+		return currentPosition;
+	}
+
+
+
+	public void setCurrentPosition(String currentPosition) {
+		this.currentPosition = currentPosition;
+	}
+
 	PrintWriter writer;
+	String lol;
+
+	private String ebos;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
-		fileUri = Uri.fromFile(getOutputPhotoFile());
 		
-		try {
-			File data = new File(
-					Environment
-							.getExternalStoragePublicDirectory("map_my_strolls"),
-					"data.txt");
-
-			writer = new PrintWriter(data, "UTF-8");
-
-			writer.println(fileUri.getPath() + "|" + currentPosition);
-			writer.close();
-
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		fileUri = Uri.fromFile(getOutputPhotoFile());
 		
 		// Acquire a reference to the system Location Manager
 		lm = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
@@ -59,10 +56,11 @@ public class CameraActivity extends Activity {
 		// Define a listener that responds to location updates
 		locationListener = new LocationListener() {
 			public void onLocationChanged(Location location) {
-				currentPosition = Double.toString(location.getLatitude()) + ":"
+				String laPosition = Double.toString(location.getLatitude()) + ":"
 						+ Double.toString(location.getLongitude());
-				Log.e("EBOS", "onLocationChanged : " + currentPosition);
-				currentPosition="ok";
+				Log.e("EBOS", "onLocationChanged : " + laPosition);
+				updatePos(laPosition);
+				setCurrentPosition(laPosition);
 			}
 
 			public void onStatusChanged(String provider, int status,
@@ -71,16 +69,17 @@ public class CameraActivity extends Activity {
 			}
 
 			public void onProviderEnabled(String provider) {
-				Log.e("EBOS", "onProviderEnabled");
+				Log.e("EBOS", "onProviderEnabled !");
 			}
 
 			public void onProviderDisabled(String provider) {
-				Log.e("EBOS", "onProviderDisabled");
+				Log.e("EBOS", "onProviderDisabled !");
 			}
 		};
 		
 		Log.e("EBOS", "demande MAJ");
-		lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 0, locationListener);
+		lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+		lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
 		
 		Intent i = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 		
@@ -92,14 +91,62 @@ public class CameraActivity extends Activity {
 		Log.e("EBOS", "startActivityForResult");
 		startActivityForResult(i, 0);
 	}
+	
 
+
+	private void updatePos(String currentPos) {
+		setCurrentPosition(currentPos);
+		this.currentPosition=currentPos;
+		this.lol=currentPos;
+		ebos = currentPos;
+		Toast.makeText(this, "Up : "+ebos, Toast.LENGTH_SHORT).show();
+		
+	}
+	
+	private void test(){
+		String pos = getCurrentPosition();
+		Toast.makeText(this, "lol : "+lol, Toast.LENGTH_SHORT).show();
+		Log.e("EBOS", "lol : "+lol);
+
+		File data = new File(
+				Environment
+						.getExternalStoragePublicDirectory("map_my_strolls"),
+				"data.txt");
+		
+		FileWriter fileWritter;
+		try {
+			fileWritter = new FileWriter(data,true);
+	        BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
+	        bufferWritter.newLine();
+	        bufferWritter.write(fileUri.getPath() + ";" + pos);
+	        bufferWritter.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+	
+	public void onActivityResult(int  requestId, int resultCode, Intent data) {
+		Log.e("ALERT","AAAAAAAAAAAAAAAAAAAAAA");
+		   if (resultCode == Activity.RESULT_CANCELED){
+				Log.e("ALERT","RESULT_CANCELED");
+		       
+		   } else if (resultCode == Activity.RESULT_OK) {
+			   test();
+				Log.e("ALERT","RESULT_OK");
+		      
+		   }
+		}
+	
 	@Override
 	protected void onResume() {
 		Log.e("EBOS", "onResume");
-		Log.e("EBOS", "fileUri : "+fileUri.getPath());
-		Log.e("EBOS", "currentPosition : "+this.currentPosition);
+	//	Log.e("EBOS", "fileUri : "+fileUri.getPath());
+	//	Log.e("EBOS", "currentPosition : "+this.currentPosition);
 		super.onResume();
-		lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 0,locationListener);
+		lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0,locationListener);
+		lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
 	}
 
 	@Override
