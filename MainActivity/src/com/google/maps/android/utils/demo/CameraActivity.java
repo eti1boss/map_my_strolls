@@ -24,11 +24,14 @@ import android.widget.Toast;
 
 public class CameraActivity extends Activity{
 
-	Uri fileUri = null;
+	public Uri fileUri = null;
 
-	protected LocationListener locationListener;
-	protected LocationManager lm;
-	String currentPosition;
+	public LocationListener locationListener;
+	public LocationManager lm;
+	public static String currentPosition;
+	
+	public static Intent i;
+	
 	public String getCurrentPosition() {
 		return currentPosition;
 	}
@@ -52,15 +55,17 @@ public class CameraActivity extends Activity{
 		
 		// Acquire a reference to the system Location Manager
 		lm = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-
+		
 		// Define a listener that responds to location updates
 		locationListener = new LocationListener() {
+
 			public void onLocationChanged(Location location) {
 				String laPosition = Double.toString(location.getLatitude()) + ":"
 						+ Double.toString(location.getLongitude());
 				Log.e("EBOS", "onLocationChanged : " + laPosition);
 				updatePos(laPosition);
 				setCurrentPosition(laPosition);
+				startActivityForResult(i, 0);
 			}
 
 			public void onStatusChanged(String provider, int status,
@@ -76,59 +81,59 @@ public class CameraActivity extends Activity{
 				Log.e("EBOS", "onProviderDisabled !");
 			}
 		};
+
 		
 		Log.e("EBOS", "demande MAJ");
 		lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
 		lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
 		
-		Intent i = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+		i = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 		
 		i.putExtra(MediaStore.EXTRA_OUTPUT, fileUri);
 
 		
-		
-
-		Log.e("EBOS", "startActivityForResult");
-		startActivityForResult(i, 0);
+		Toast.makeText(this, "Localisation en cours", Toast.LENGTH_LONG).show();
 	}
 	
 
 
 	private void updatePos(String currentPos) {
 		setCurrentPosition(currentPos);
-		this.currentPosition=currentPos;
+		currentPosition=currentPos;
 		this.lol=currentPos;
 		ebos = currentPos;
-		Toast.makeText(this, "Up : "+ebos, Toast.LENGTH_SHORT).show();
+		Toast.makeText(this, "up : "+ebos, Toast.LENGTH_SHORT).show();
 		
 	}
 	
 	private void test(){
-		String pos = getCurrentPosition();
-		Toast.makeText(this, "lol : "+lol, Toast.LENGTH_SHORT).show();
-		Log.e("EBOS", "lol : "+lol);
 
-		File data = new File(
-				Environment
-						.getExternalStoragePublicDirectory("map_my_strolls"),
-				"data.txt");
+		String pos = getCurrentPosition();
+		Toast.makeText(this, "test : "+pos, Toast.LENGTH_SHORT).show();
 		
-		FileWriter fileWritter;
-		try {
-			fileWritter = new FileWriter(data,true);
-	        BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
-	        bufferWritter.newLine();
-	        bufferWritter.write(fileUri.getPath() + ";" + pos);
-	        bufferWritter.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		if(pos != ""){
+		
+			File data = new File(
+					Environment
+							.getExternalStoragePublicDirectory("map_my_strolls"),
+					"data.txt");
+			
+			FileWriter fileWritter;
+			try {
+				fileWritter = new FileWriter(data,true);
+		        BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
+		        bufferWritter.newLine();
+		        bufferWritter.write(fileUri.getPath() + ";" + pos);
+		        bufferWritter.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		
 	}
 	
 	public void onActivityResult(int  requestId, int resultCode, Intent data) {
-		Log.e("ALERT","AAAAAAAAAAAAAAAAAAAAAA");
 		   if (resultCode == Activity.RESULT_CANCELED){
 				Log.e("ALERT","RESULT_CANCELED");
 		       
@@ -141,9 +146,6 @@ public class CameraActivity extends Activity{
 	
 	@Override
 	protected void onResume() {
-		Log.e("EBOS", "onResume");
-	//	Log.e("EBOS", "fileUri : "+fileUri.getPath());
-	//	Log.e("EBOS", "currentPosition : "+this.currentPosition);
 		super.onResume();
 		lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0,locationListener);
 		lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
